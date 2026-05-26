@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Lads Ranker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;--border:#2e2e2e;
+  --text:#f0f0f0;--muted:#888;--gold:#f5c842;--silver:#b0b8c1;--bronze:#cd7f32;--accent:#ff4757;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+h1,.rank-num{font-family:'Bebas Neue',sans-serif;letter-spacing:0.04em}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:2rem 2rem 1.5rem;text-align:center}
+header h1{font-size:clamp(36px,7vw,72px);color:var(--gold);line-height:1}
+header p{color:var(--muted);font-size:14px;margin-top:4px;letter-spacing:0.05em}
+.input-section{max-width:680px;margin:2rem auto;padding:0 1.5rem;display:flex;flex-direction:column;gap:12px}
+.input-row{display:flex;gap:10px}
+#activity-input{
+  flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:14px 18px;font-size:16px;font-family:'DM Sans',sans-serif;color:var(--text);outline:none;transition:border-color 0.2s
+}
+#activity-input:focus{border-color:var(--gold)}
+#activity-input::placeholder{color:var(--muted)}
+#rank-btn{
+  background:var(--gold);border:none;border-radius:8px;padding:14px 28px;
+  font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:0.08em;
+  color:#0f0f0f;cursor:pointer;white-space:nowrap;transition:opacity 0.15s,transform 0.1s
+}
+#rank-btn:hover{opacity:0.88}
+#rank-btn:active{transform:scale(0.97)}
+.examples{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  background:var(--surface2);border:1px solid var(--border);border-radius:20px;
+  padding:6px 14px;font-size:13px;color:var(--muted);cursor:pointer;transition:all 0.15s
+}
+.chip:hover{border-color:var(--gold);color:var(--gold)}
+#results{max-width:680px;margin:0 auto;padding:0 1.5rem 3rem}
+.activity-heading{
+  font-family:'Bebas Neue',sans-serif;font-size:clamp(22px,5vw,40px);color:var(--accent);
+  margin-bottom:1.5rem;letter-spacing:0.06em;border-left:4px solid var(--accent);padding-left:14px
+}
+.ranking-list{display:flex;flex-direction:column;gap:12px}
+.rank-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  display:flex;align-items:center;gap:16px;padding:14px 16px;
+  animation:slideIn 0.35s ease both
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.rank-card.gold{border-color:var(--gold);background:#1e1b0f}
+.rank-card.silver{border-color:var(--silver);background:#17191e}
+.rank-card.bronze{border-color:var(--bronze);background:#1c1510}
+.rank-num{font-size:32px;min-width:42px;text-align:center;line-height:1;color:var(--muted)}
+.rank-card.gold .rank-num{color:var(--gold)}
+.rank-card.silver .rank-num{color:var(--silver)}
+.rank-card.bronze .rank-num{color:var(--bronze)}
+.avatar{width:56px;height:56px;border-radius:50%;flex-shrink:0;overflow:hidden;border:2px solid var(--border)}
+.rank-card.gold .avatar{border-color:var(--gold)}
+.rank-card.silver .avatar{border-color:var(--silver)}
+.rank-card.bronze .avatar{border-color:var(--bronze)}
+.rank-info{flex:1;min-width:0}
+.rank-name{font-size:16px;font-weight:600;margin-bottom:3px}
+.rank-desc{font-size:13px;color:var(--muted);line-height:1.5}
+.medal{font-size:22px;flex-shrink:0}
+</style>
+</head>
+<body>
+<header>
+  <h1>The Lads Ranker</h1>
+  <p>Who reigns supreme? Enter any activity to find out.</p>
+</header>
+<div class="input-section">
+  <div class="input-row">
+    <input id="activity-input" type="text" placeholder="e.g. pub quiz, arm wrestling, avoiding the bill..." maxlength="80"/>
+    <button id="rank-btn">Rank 'Em</button>
+  </div>
+  <div class="examples">
+    <span class="chip" onclick="go('a pub quiz')">pub quiz</span>
+    <span class="chip" onclick="go('arm wrestling')">arm wrestling</span>
+    <span class="chip" onclick="go('a 100m sprint')">100m sprint</span>
+    <span class="chip" onclick="go('cooking a dinner party')">cooking</span>
+    <span class="chip" onclick="go('pulling at a nightclub')">pulling</span>
+    <span class="chip" onclick="go('surviving in the wild')">survival</span>
+    <span class="chip" onclick="go('a stock market challenge')">stock market</span>
+    <span class="chip" onclick="go('a fashion show')">fashion show</span>
+    <span class="chip" onclick="go('avoiding paying for a round')">avoiding the bill</span>
+    <span class="chip" onclick="go('a silent meditation retreat')">meditation retreat</span>
+  </div>
+</div>
+<div id="results"></div>
+
+<script>
+const FRIENDS = [
+  {
+    id:'adam', name:'Adam Murphy', emoji:'🧠',
+    colors:['#1a4a6b','#2a7ab5','#c8e6ff'],
+    traits:{
+      smart:10, athletic:9, social:7, fashion:5, money:6, chill:6, competitive:7, spiritual:3,
+      descriptions:{
+        default:["Pulled the answer out of his brain before the question finished.", "Remembered the exact training plan from 2019 and executed it flawlessly.", "Filed this activity under 'already mastered, age 14'.", "His eidetic memory gave him an illegal advantage. Nobody is surprised."],
+        pull:["Recited every woman's star sign, Myers-Briggs type, and childhood pet's name within 30 seconds. Terrifying.", "Remembered every girl's name, drink order, and dream from the night before. Creepily effective."],
+        swim:["This is basically his living room. Lapped everyone. Twice.", "Born in water. Probably part fish. Absolutely dominant."],
+        quiz:["Typed the answers before the questions were read out. Disqualified for cheating. Still won.", "His brain is literally a hard drive. The rest of you are floppy disks."],
+        last:["Somehow the one thing not stored in that giant brain of his.", "Even a photographic memory can't fix what he's missing here."]
+      }
+    }
+  },
+  {
+    id:'mitchel', name:'Mitchel Steward', emoji:'👗',
+    colors:['#4a1a5a','#9b40b8','#f0c8ff'],
+    traits:{
+      smart:6, athletic:8, social:8, fashion:10, money:5, chill:4, competitive:7, spiritual:4,
+      descriptions:{
+        default:["Arrived looking better than everyone else and never let anyone forget it.", "Turned the whole thing into a social justice seminar. Still somehow won.", "Checked his outfit three times before starting. Worth it.", "His workout routine prepared him for exactly this. Annoyingly."],
+        fashion:["This is literally his Olympics. Everyone else is just spectating.", "Flew to Milan last week specifically to train for this moment."],
+        workout:["Those gym sessions finally paid off. He will not stop telling you about it.", "Treated it like a CrossFit WOD and absolutely smashed it."],
+        woke:["Spent 40% of the time explaining the problematic history of the activity. Still placed top 3.", "Filed a formal complaint about the judging criteria being culturally insensitive. Somehow still won."],
+        last:["His extensive knowledge of ethical fashion brands proved surprisingly useless here.", "He tried to make it a discussion about systemic inequality. It did not go well."]
+      }
+    }
+  },
+  {
+    id:'james', name:'James Armstrong', emoji:'💈',
+    colors:['#1a4a2a','#2a8a4a','#c8ffda'],
+    traits:{
+      smart:6, athletic:6, social:9, fashion:7, money:5, chill:10, competitive:3, spiritual:6,
+      descriptions:{
+        default:["Didn't really try, still came out looking cool. Classic James.", "Turned up late, nailed it, left early. Hair was perfect throughout.", "His chill energy somehow disarmed everyone around him. He floated to a podium finish.", "Wasn't really paying attention but his hair carried him to a respectable result."],
+        chill:["He IS this activity. They should name it after him.", "Set a new world record for the most relaxed performance in history."],
+        social:["Somehow made friends with everyone involved and charmed his way to victory.", "His effortless charisma did 90% of the work. The hair did the other 10%."],
+        last:["Even James's legendary chill couldn't save him here. He took it well. Obviously.", "Shrugged it off immediately and suggested going for a pint. Legendary response to disaster."]
+      }
+    }
+  },
+  {
+    id:'jordan', name:'Jordan Smith', emoji:'⚖️',
+    colors:['#4a3a1a','#b87a20','#ffe8c8'],
+    traits:{
+      smart:8, athletic:5, social:7, fashion:6, money:6, chill:5, competitive:8, spiritual:3,
+      descriptions:{
+        default:["Submitted a 4,000-word essay on why he should have won. Judges disagreed.", "Argued his way to a higher placing than his performance deserved. Genuinely impressive.", "Referenced three philosophers and a Supreme Court case mid-activity. Placed well.", "Made a compelling legal argument that the rules were unconstitutional. It worked."],
+        law:["Objection overruled, but he still placed top three on a technicality.", "Turned the whole thing into a case study. His closing argument was genuinely moving."],
+        argue:["Out-debated the judges, the competitors, and two bystanders. Won on points.", "Filed an appeal. Won the appeal. Celebrated the appeal more than the activity."],
+        last:["Currently drafting legal proceedings against the result. Watch this space.", "Declared the scoring system philosophically incoherent. He's not wrong, but he still lost."]
+      }
+    }
+  },
+  {
+    id:'matt', name:'Matt Ross Smith', emoji:'📊',
+    colors:['#1a2a4a','#2a4ab8','#c8d8ff'],
+    traits:{
+      smart:9, athletic:5, social:5, fashion:4, money:7, chill:6, competitive:6, spiritual:9,
+      descriptions:{
+        default:["Built a spreadsheet to optimise his strategy. It worked perfectly.", "Said a quiet prayer, then executed a data-driven masterclass.", "His pre-activity statistical analysis gave him a 23% edge. He knew this. We all knew this.", "Ran the numbers, trusted God, and delivered. In that order."],
+        data:["Modelled every possible outcome in Excel beforehand. Lived in the top percentile.", "His regression analysis correctly predicted exactly this result. The Lord provides."],
+        christian:["Thanked the Lord for the result. The Lord clearly did some heavy lifting.", "Remained humble throughout, which was genuinely impressive given how dominant he was."],
+        last:["His spreadsheet said there was a 4% chance of this. He is devastated. The Lord is testing him.", "No data model could have predicted this disaster. He's blaming outliers."]
+      }
+    }
+  },
+  {
+    id:'peter', name:'Peter Chen', emoji:'💰',
+    colors:['#1a3a1a','#2a7a2a','#c8ffc8'],
+    traits:{
+      smart:8, athletic:6, social:8, fashion:7, money:10, chill:5, competitive:9, spiritual:2,
+      descriptions:{
+        default:["Monetised the experience before it was over. Somehow profitable.", "Found the arbitrage opportunity nobody else saw and exploited it ruthlessly.", "Treated it like a hostile takeover. Efficient. Cold. Victorious.", "His private equity instincts kicked in and he restructured the entire approach."],
+        money:["This is just another deal. He closed it. He's already moved on to the next one.", "Valued the opportunity correctly, deployed capital, and exited with a return. Standard."],
+        network:["Spent the whole time networking. Still won. Unfair.", "Handed out three business cards mid-activity. Top of the leaderboard. Classic Peter."],
+        last:["He's already figured out how to short sell his own poor performance.", "Called it a 'strategic loss' and is somehow billing it as a consulting fee."]
+      }
+    }
+  },
+  {
+    id:'tom', name:'Tom Stuart', emoji:'🪨',
+    colors:['#2a2a2a','#606060','#e0e0e0'],
+    traits:{
+      smart:7, athletic:8, social:4, fashion:5, money:6, chill:8, competitive:5, spiritual:5,
+      descriptions:{
+        default:["Said nothing. Did everything correctly. Left.", "His silence was tactical. Nobody saw him coming.", "Tall. Silent. Lethal. Nobody knows how he did it but he did.", "Spoke two words the entire time. Both were correct."],
+        silent:["Communicated only through results. Peak efficiency.", "His preparation was invisible. His performance was not."],
+        tall:["Used his natural dimensions as a strategic weapon. Highly effective.", "Height advantage: deployed. Everyone else: looking up, literally and figuratively."],
+        last:["Still said nothing. We're not sure he noticed.", "Acknowledged the result with a single nod. His face remains unreadable."]
+      }
+    }
+  },
+  {
+    id:'andrew', name:'Andrew Unsworth', emoji:'🏆',
+    colors:['#4a3a00','#c8a000','#fff0a0'],
+    traits:{
+      smart:8, athletic:9, social:8, fashion:7, money:7, chill:7, competitive:10, spiritual:5,
+      descriptions:{
+        default:["Won. Obviously. He always wins. Why is anyone surprised.", "Turned up, dominated, collected the trophy, acted humble. The usual.", "The result was never in doubt. Andrew knew. We all knew. He knew we knew.", "His aura of inevitability demoralised the competition before it began."],
+        win:["Scientists are studying him to understand how one person can win this much.", "He's run out of shelf space for trophies. This one is going in the garage."],
+        compete:["Broke the previous record and then looked mildly inconvenienced by it.", "His warm-up was more impressive than everyone else's full effort."],
+        last:["This is genuinely historic. Andrew has finally lost something. Pour one out.", "The world has stopped spinning. Dogs are looking around confused. Andrew Unsworth lost."]
+      }
+    }
+  }
+];
+
+function makeSVG(f) {
+  const [bg, mid, light] = f.colors;
+  const ini = f.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+  return `<svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" width="56" height="56">
+    <circle cx="28" cy="28" r="28" fill="${bg}"/>
+    <circle cx="28" cy="21" r="11" fill="${mid}"/>
+    <ellipse cx="28" cy="52" rx="18" ry="13" fill="${mid}"/>
+    <text x="28" y="24" text-anchor="middle" dominant-baseline="middle" font-family="Georgia,serif" font-size="11" font-weight="bold" fill="${light}">${ini}</text>
+  </svg>`;
+}
+
+function pick(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+
+function getKeywords(activity) {
+  const a = activity.toLowerCase();
+  const map = {
+    swim:['swim','pool','water','diving','backstroke','freestyle','breaststroke','lap'],
+    pull:['pull','pulling','nightclub','club','dating','tinder','romance','flirt','chat up'],
+    quiz:['quiz','trivia','knowledge','questions','pub quiz','general knowledge'],
+    fashion:['fashion','style','clothes','outfit','dress','design','catwalk','model'],
+    money:['stock','market','invest','trading','money','finance','crypto','wealth'],
+    workout:['gym','workout','weights','crossfit','fitness','exercise','lifting','bench'],
+    law:['law','legal','court','argue','debate','trial','barrister','solicitor'],
+    data:['data','spreadsheet','statistics','excel','analysis','numbers','code','algorithm'],
+    chill:['chill','relax','meditation','yoga','calm','silent','quiet','peace','mindful'],
+    christian:['church','prayer','god','christian','hymn','sermon','bible','faith'],
+    woke:['woke','politics','activism','protest','social justice','climate','rights'],
+    argue:['argue','debate','rhetoric','persuade','speech','argument','convince'],
+    network:['network','business','meeting','connect','linkedin','deal','conference'],
+    silent:['silent','quiet','mime','no talking','whisper'],
+    tall:['reach','climb','basketball','volleyball','high jump','tall'],
+  };
+  const found = [];
+  for(const [key,words] of Object.entries(map)) {
+    if(words.some(w=>a.includes(w))) found.push(key);
+  }
+  return found;
+}
+
+function scoreFor(friend, keywords, rank) {
+  const t = friend.traits;
+  let score = 0;
+  const kw = keywords;
+  if(kw.includes('swim'))      score += t.athletic*2;
+  if(kw.includes('pull'))      score += t.social*2 + t.fashion;
+  if(kw.includes('quiz'))      score += t.smart*2;
+  if(kw.includes('fashion'))   score += t.fashion*2;
+  if(kw.includes('money'))     score += t.money*2;
+  if(kw.includes('workout'))   score += t.athletic*2;
+  if(kw.includes('law'))       score += t.smart + t.competitive;
+  if(kw.includes('data'))      score += t.smart*2;
+  if(kw.includes('chill'))     score += t.chill*2;
+  if(kw.includes('argue'))     score += t.smart + t.competitive;
+  if(kw.includes('network'))   score += t.money + t.social;
+  if(kw.includes('christian')) score += t.spiritual*2;
+  if(kw.includes('woke'))      score += (friend.id==='mitchel'?20:0);
+  if(kw.includes('silent'))    score += (friend.id==='tom'?20:0);
+  if(kw.includes('tall'))      score += (friend.id==='tom'?20:0);
+  if(score===0) {
+    score = t.smart + t.athletic + t.social + t.fashion + t.money + t.chill + t.competitive + t.spiritual;
+    score += (Math.random()-0.5)*8;
+  }
+  if(friend.id==='andrew') score += 4;
+  score += (Math.random()-0.5)*6;
+  return score;
+}
+
+function descFor(friend, keywords, position, total) {
+  const d = friend.traits.descriptions;
+  const isLast = position===total-1;
+  if(isLast && d.last) return pick(d.last);
+  for(const kw of keywords) {
+    if(d[kw]) return pick(d[kw]);
+  }
+  return pick(d.default);
+}
+
+function go(activity) {
+  document.getElementById('activity-input').value = activity;
+  rank(activity);
+}
+
+function rank(activity) {
+  const kw = getKeywords(activity);
+  const scored = FRIENDS.map(f=>({f, score:scoreFor(f,kw,0)}));
+  scored.sort((a,b)=>b.score-a.score);
+  const medals = ['🥇','🥈','🥉'];
+  const cardClass = ['gold','silver','bronze'];
+  let html = `<div class="activity-heading">${activity}</div><div class="ranking-list">`;
+  scored.forEach(({f},i)=>{
+    const desc = descFor(f, kw, i, scored.length);
+    const cls = cardClass[i]||'';
+    const medal = medals[i]||'';
+    html+=`<div class="rank-card ${cls}" style="animation-delay:${i*0.07}s">
+      <div class="rank-num">${i+1}</div>
+      <div class="avatar">${makeSVG(f)}</div>
+      <div class="rank-info">
+        <div class="rank-name">${f.name} ${f.emoji}</div>
+        <div class="rank-desc">${desc}</div>
+      </div>
+      ${medal?`<div class="medal">${medal}</div>`:''}
+    </div>`;
+  });
+  html+='</div>';
+  document.getElementById('results').innerHTML=html;
+}
+
+document.getElementById('rank-btn').addEventListener('click',()=>{
+  const v=document.getElementById('activity-input').value.trim();
+  if(v) rank(v);
+});
+document.getElementById('activity-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){const v=e.target.value.trim();if(v)rank(v);}
+});
+</script>
+</body>
+</html>
